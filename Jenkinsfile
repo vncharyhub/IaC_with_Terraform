@@ -8,22 +8,22 @@ pipeline {
     environment {
         TF_VERSION     = "1.5.0"
         AWS_REGION     = "us-east-1"
-        GIT_REPO       = "https://github.com/your-org/your-terraform-repo.git"
+        GIT_REPO       = "https://github.com/vncharyhub/IaC_with_Terraform.git"
         DOCKER_REPO    = "your-dockerhub-username/nginx-app"
         CREDENTIALS_ID = 'aws-jenkins-creds'              // AWS IAM creds in Jenkins
         SONARQUBE_ENV  = 'SonarQubeServer'                // SonarQube config in Jenkins
     }
 
     stages {
-        stage('Stage 1: Checkout SCM') {
+        stage('Checkout Branch') {
             steps {
-                git url: 'https://github.com/your-org/nginx-webapp.git', branch: 'master'
+                git url: 'https://github.com/vncharyhub/IaC_with_Terraform.git', branch: 'master'
             }
         }
 
-        stage('Stage 2: Quality Gates') {
+        stage('Quality Gates with SonarQube Scanner') {
             parallel {
-                stage('Static Code Analysis (SCA)') {
+                stage('Static Code Analysis') {
                     steps {
                         echo "Running Static Code Analysis..."
                         // example: flake8 src/
@@ -53,7 +53,7 @@ pipeline {
             }
         }
 
-        stage('Stage 3: Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     dockerImage = docker.build("${DOCKER_REPO}:${params.ENVIRONMENT}-${env.BUILD_NUMBER}")
@@ -61,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('Stage 4: Push Docker Image') {
+        stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
@@ -72,13 +72,13 @@ pipeline {
             }
         }
 
-        stage('Stage 5: Provision Infra with Terraform') {
+        stage('Provision Infra with Terraform') {
             steps {
                 script {
                     echo "Provisioning AWS Infra with Terraform for ${params.ENVIRONMENT}"
                 }
 
-                dir('infra') {
+                dir('infrastructure') {
                     git branch: 'master', url: "${env.GIT_REPO}"
 
                     withCredentials([[
